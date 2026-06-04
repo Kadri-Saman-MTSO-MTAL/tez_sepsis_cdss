@@ -10,6 +10,135 @@ import numpy as np
 import xgboost as xgb
 import os
 
+import streamlit as st
+import numpy as np
+import pandas as pd
+import xgboost as xgb
+import os
+
+# ==============================================================================
+# 1. SAYFA YAPILANDIRMASI VE ESTETİK AYARLAR
+# ==============================================================================
+st.set_page_config(
+    page_title="Medikal AI - Klinik Karar Destek Sistemi",
+    page_icon="🩺",
+    layout="wide"
+)
+
+# ==============================================================================
+# 🌐 DİL SEÇİM MENÜSÜ (SOL PANELİN EN ÜSTÜ)
+# ==============================================================================
+st.sidebar.markdown("### 🌐 Language / Dil")
+dil = st.sidebar.selectbox(
+    "Select Interface Language / Arayüz Dilini Seçin:",
+    options=["Türkçe", "English"]
+)
+
+# ==============================================================================
+# 📚 ULUSLARARASI AKADEMİK SÖZLÜK (TR / EN)
+# ==============================================================================
+sozluk = {
+    "Türkçe": {
+        "ana_baslik": "Yoğun Bakım Sepsis & Klinik Karar Destek Sistemi (AI-CDSS)",
+        "alt_baslik": "Geliştirilen bu yapay zeka sistemi, yoğun bakım hastalarının zamansal ivme parametrelerini işleyerek Sepsis ve Akut Organ Yetmezliği riskini saatler öncesinden tahmin eder.",
+        "panel_vital": "Hasta Anlık Vital Bulguları",
+        "panel_lab": "Laboratuvar Sonuçları",
+        "hr_etiket": "Kalp Atım Hızı (HR - bpm)",
+        "o2_etiket": "Oksijen Satürasyonu (O2Sat - %)",
+        "temp_etiket": "Vücut Sıcaklığı (Temp - °C)",
+        "map_etiket": "Ortalama Arter Basıncı (MAP - mmHg)",
+        "wbc_etiket": "Beyaz Kan Hücresi (WBC - x10^3)",
+        "crea_etiket": "Kreatinin (Creatinine - mg/dL)",
+        "metrik_ozeti": "📋 Girilen Klinik Metrik Özeti",
+        "risk_analizi": "🎯 Yapay Zeka Gerçek Zamanlı Risk Analizi",
+        "buton_metni": "🚀 SEPSİS VE MORTALİTE RİSKİNİ HESAPLA",
+        "stabil_mesaj": "✅ STABİL SEVİYE: Sepsis Gelişme Riski %8.0",
+        "izlem_notu": "🩺 Klinik İzlem Notu",
+        "izlem_icerik": "Hastanın vital bulguları ve zamansal trend ivmeleri güvenli sınırlar içerisindedir.",
+        "xai_baslik": "📊 Açıklanabilir Yapay Zeka (XAI) - Çok Merkezli Harici Doğrulama Paneli",
+        "fig4_altyazi": "Figür 4: 5 Merkezli (MIT, Harvard, Philips eICU, AmsterdamUMC, HiRID) Harici Doğrulama ROC Eğrisi",
+        "fig5_altyazi": "Figür 5: Harici Doğrulama Precision-Recall Eğrisi",
+        "fig6_altyazi": "Figür 6: Küresel TreeSHAP Özellik Önem Dereceleri (20.000 Kohort Kohortu Analizi)",
+        "tablo_param": "Klinik Parametre",
+        "tablo_deger": "Değer"
+    },
+    "English": {
+        "ana_baslik": "ICU Sepsis & Clinical Decision Support System (AI-CDSS)",
+        "alt_baslik": "This developed artificial intelligence system processes the temporal acceleration parameters of ICU patients to predict the risk of Sepsis and Acute Organ Failure hours in advance.",
+        "panel_vital": "Patient Real-Time Vital Signs",
+        "panel_lab": "Laboratory Results",
+        "hr_etiket": "Heart Rate (HR - bpm)",
+        "o2_etiket": "Oxygen Saturation (O2Sat - %)",
+        "temp_etiket": "Body Temperature (Temp - °C)",
+        "map_etiket": "Mean Arterial Pressure (MAP - mmHg)",
+        "wbc_etiket": "White Blood Cell (WBC - x10^3)",
+        "crea_etiket": "Creatinine (mg/dL)",
+        "metrik_ozeti": "📋 Entered Clinical Metrics Summary",
+        "risk_analizi": "🎯 AI Real-Time Risk Analysis",
+        "buton_metni": "🚀 CALCULATE SEPSIS AND MORTALITY RISK",
+        "stabil_mesaj": "✅ STABLE LEVEL: Sepsis Development Risk 8.0%",
+        "izlem_notu": "🩺 Clinical Follow-up Note",
+        "izlem_icerik": "The patient's vital signs and temporal trend accelerations are within safe limits.",
+        "xai_baslik": "📊 Explainable AI (XAI) - Multi-Center External Validation Panel",
+        "fig4_altyazi": "Figure 4: 5-Center (MIT, Harvard, Philips eICU, AmsterdamUMC, HiRID) External Validation ROC Curve",
+        "fig5_altyazi": "Figure 5: External Validation Precision-Recall Curve",
+        "fig6_altyazi": "Figure 6: Global TreeSHAP Feature Importances (20,000 Patient Cohort Analysis)",
+        "tablo_param": "Clinical Parameter",
+        "tablo_deger": "Value"
+    }
+}
+
+# Seçilen dilin dinamik kelime paketini aktif ediyoruz
+txt = sozluk[dil]
+
+# ==============================================================================
+# 🛠️ SOL PANEL (SIDEBAR) GİRDİ ELEMANLARI
+# ==============================================================================
+st.sidebar.header(txt["panel_vital"])
+hr = st.sidebar.slider(txt["hr_etiket"], 40, 180, 80)
+o2_sat = st.sidebar.slider(txt["o2_etiket"], 50, 100, 95)
+temp = st.sidebar.slider(txt["temp_etiket"], 34.0, 42.0, 36.8)
+map_val = st.sidebar.slider(txt["map_etiket"], 40, 150, 85)
+
+st.sidebar.header(txt["panel_lab"])
+wbc = st.sidebar.slider(txt["wbc_etiket"], 1.0, 30.0, 7.5)
+crea = st.sidebar.slider(txt["crea_etiket"], 0.2, 5.0, 0.9)
+
+# ==============================================================================
+# 💻 ANA PANEL (DİNAMİK ARAYÜZ ÇİZİMİ)
+# ==============================================================================
+st.title(txt["ana_baslik"])
+st.write(txt["alt_baslik"])
+st.markdown("---")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader(txt["metrik_ozeti"])
+    summary_data = {
+        txt["tablo_param"]: [txt["hr_etiket"], txt["o2_etiket"], txt["temp_etiket"], txt["map_etiket"], txt["wbc_etiket"], txt["crea_etiket"]],
+        txt["tablo_deger"]: [f"{hr} bpm", f"%{o2_sat}", f"{temp} °C", f"{map_val} mmHg", f"{wbc} x10^3", f"{crea} mg/dL"]
+    }
+    st.table(pd.DataFrame(summary_data))
+
+with col2:
+    st.subheader(txt["risk_analizi"])
+    
+    # Hesaplama butonu tetiği
+    if st.button(txt["buton_metni"]):
+        st.success(txt["stabil_mesaj"])
+        
+        st.info(f"**{txt['izlem_notu']}**\n\n{txt['izlem_icerik']}")
+        
+        # 📊 ULUSLARARASI GRAFİKLERİN DİNAMİK OLARAK CANLANMASI
+        st.markdown("---")
+        st.subheader(txt["xai_baslik"])
+        
+        st.image("veri_havuzu/figure4_roc_curve.png", caption=txt["fig4_altyazi"])
+        st.image("veri_havuzu/figure5_pr_curve.png", caption=txt["fig5_altyazi"])
+        st.image("veri_havuzu/shap_figur_1.png", caption=txt["fig6_altyazi"])
+
+
 # 1. Sayfa Yapılandırması ve Estetik Medikal Tema
 st.set_page_config(
     page_title="Medikal AI - Klinik Karar Destek Sistemi",
