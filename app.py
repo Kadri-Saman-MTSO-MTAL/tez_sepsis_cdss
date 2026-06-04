@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Doktora Tezi: Yoğun Bakım Sepsis Karar Destek Sistemi (AI-CDSS)
-Arayüz Prototipi: Çift Dilli (TR/EN) Kusursuz Entegrasyon
+Nihai Çözüm: Üç Nokta ve Grafik Terimleri Düzeltilmiş Versiyon
 """
 
 import streamlit as st
@@ -18,7 +18,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Arka planda simüle edilmiş model motorunu önbelleğe alarak yüklüyoruz
 @st.cache_resource
 def load_internal_model():
     np.random.seed(42)
@@ -32,7 +31,7 @@ def load_internal_model():
 model_engine = load_internal_model()
 
 # ==============================================================================
-# 🌐 DİL SEÇİM MENÜSÜ (SOL PANELİN EN ÜSTÜ)
+# 🌐 DİL SEÇİM MENÜSÜ
 # ==============================================================================
 st.sidebar.markdown("### 🌐 Language / Dil")
 dil = st.sidebar.selectbox(
@@ -41,7 +40,7 @@ dil = st.sidebar.selectbox(
 )
 
 # ==============================================================================
-# 📚 ULUSLARARASI AKADEMİK SÖZLÜK (TR / EN MİMARİSİ)
+# 📚 ULUSLARARASI AKADEMİK SÖZLÜK (ÜÇ NOKTA VE KILAVUZ DÜZELTİLMİŞ)
 # ==============================================================================
 sozluk = {
     "Türkçe": {
@@ -64,7 +63,7 @@ sozluk = {
         "map_trend_yardim": "Negatif değer tansiyonun hızla düştüğünü gösterir",
         "roll_hr_etiket": "Son 6 Saatlik Ortalama HR",
         "metrik_ozeti": "### 🩻 Girilen Klinik Metrik Özeti",
-        "tablo_aciklama": "Aşağıdaki tablo, hastanın başından anlık olarak toplanan... (AI-CDSS Girdisi)",
+        "tablo_aciklama": "Aşağıdaki tablo, hastanın başından anlık olarak toplanan parametrelerin zamansal ivme özetidir (AI-CDSS Girdisi).",
         "risk_analizi": "### 🤖 Yapay Zeka Gerçek Zamanlı Risk Analizi",
         "risk_aciklama": "Butona bastığınızda, arka planda çalışan algoritmalar hastanın sepsis olasılığını hesaplar.",
         "buton_metni": "🚀 SEPSİS VE MORTALİTE RİSKİNİ HESAPLA",
@@ -84,7 +83,8 @@ sozluk = {
         "fig5_cap": "Figür 5: Harici Doğrulama Precision-Recall Eğrisi",
         "fig6_cap": "Figür 6: Küresel TreeSHAP Özellik Önem Dereceleri",
         "tablo_param": "Klinik Parametre",
-        "tablo_deger": "Değer"
+        "tablo_deger": "Değer",
+        "kilavuz_notu": "💡 **Grafik Terimleri Okuma Kılavuzu:** \n- *True Positive Rate / Sensitivity:* Duyarlılık (Doğru Teşhis Oranı)\n- *False Positive Rate:* Yalancı Pozitiflik Oranı\n- *Precision / Positive Predictive Value:* Kesinlik (Pozitif Tahmin Değeri)\n- *Recall / Sensitivity:* Duyarlılık\n- *Feature Value (High/Low):* Klinik Değişken Değeri (Yüksek / Düşük)\n- *SHAP Value (Impact on Model Output):* SHAP Değeri (Modele Sepsis Yönünde Yapılan Pozitif/Negatif Etki)"
     },
     "English": {
         "ana_baslik": "🏥 ICU Sepsis & Clinical Decision Support System (AI-CDSS)",
@@ -106,10 +106,10 @@ sozluk = {
         "map_trend_yardim": "Negative values indicate rapidly falling blood pressure",
         "roll_hr_etiket": "Last 6 Hours Moving Average HR",
         "metrik_ozeti": "### 🩻 Entered Clinical Metrics Summary",
-        "tablo_aciklama": "The following table shows the parameters collected in real-time... (AI-CDSS Input)",
+        "tablo_aciklama": "The following table shows the parameters collected in real-time as temporal acceleration summaries (AI-CDSS Input).",
         "risk_analizi": "### 🤖 AI Real-Time Risk Analysis",
         "risk_aciklama": "When you click the button, background algorithms calculate the probability of sepsis.",
-        "buton_metni": "🚀 CALCULATE SEPSIS AND MORTALITY RISK",
+        "buton_metni": "🚀 CALCULATE Sepsis AND MORTALITY RISK",
         "kritik_mesaj": "⚠️ CRITICAL LEVEL: Sepsis Development Risk %",
         "stabil_mesaj": "✅ STABLE LEVEL: Sepsis Development Risk %",
         "klinik_oneriler_baslik": "#### 🚨 Emergency Clinical Protocol Recommendation (AI-Recommendation)",
@@ -126,7 +126,8 @@ sozluk = {
         "fig5_cap": "Figure 5: External Validation Precision-Recall Curve",
         "fig6_cap": "Figure 6: Global TreeSHAP Feature Importances",
         "tablo_param": "Clinical Parameter",
-        "tablo_deger": "Value"
+        "tablo_deger": "Value",
+        "kilavuz_notu": "💡 **Graphics Interpretation Guide:** All validation metrics and SHAP values are extracted from international open-access health cohorts (MIMIC-IV, eICU, AmsterdamUMC)."
     }
 }
 
@@ -178,8 +179,6 @@ with col2:
     st.markdown(txt["risk_aciklama"])
     
     if st.button(txt["buton_metni"], use_container_width=True):
-        
-        # Algoritma risk hesaplamaları
         base_risk = 8.0
         if hr > 100: base_risk += 18
         if o2sat < 92: base_risk += 22
@@ -202,11 +201,13 @@ with col2:
             st.markdown(txt["izlem_notu"])
             st.info(txt["izlem_icerik"])
 
-# Grafik Alanı (Kolonların dışına tam ekran basılacak şekilde düzenlendi)
+# Grafik Alanı (Tam Ekran Düzeni)
 st.write("---")
 st.subheader(txt["xai_baslik"])
 
-# Her iki dilde de grafiklerin tam boy ve hizalı parıldaması sağlandı
+# Türkçe seçildiğinde grafiklerin altına okuma kılavuzu basar
+st.info(txt["kilavuz_notu"])
+
 st.image("veri_havuzu/figure4_roc_curve.png", caption=txt["fig4_cap"], use_container_width=True)
 st.image("veri_havuzu/figure5_pr_curve.png", caption=txt["fig5_cap"], use_container_width=True)
 st.image("veri_havuzu/shap_figur_1.png", caption=txt["fig6_cap"], use_container_width=True)
