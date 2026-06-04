@@ -107,3 +107,8 @@ with col2:
 
 st.write("---")
 st.caption("© 2026 Doktora Tez Projesi - Tüm Hakları Saklıdır. Bu arayüz makale hakem inceleme süreçleri için Streamlit Cloud üzerinde simüle edilmiştir.")
+st.markdown("---")
+st.subheader("📊 Açıklanabilir Yapay Zeka (XAI) Grafik Paneli")
+st.image("veri_havuzu/figure4_roc_curve.png", caption="Figür 4: 5 Merkezli Harici Doğrulama ROC Eğrisi")
+st.image("veri_havuzu/figure5_pr_curve.png", caption="Figür 5: Harici Doğrulama Precision-Recall Eğrisi")
+st.image("veri_havuzu/shap_figur_1.png", caption="Figür 6: Küresel TreeSHAP Özellik Önem Dereceleri")
